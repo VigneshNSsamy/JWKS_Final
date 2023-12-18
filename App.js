@@ -4,6 +4,8 @@ const NodeRsa = require('node-rsa')
 'use strict'
 const fs = require('fs')
 const jwt = require('jsonwebtoken')
+const crypto = require('crypto')
+
 
 /*const key = new NodeRsa({ b: 2048 })
  let serect = 'Hello from RSA'
@@ -69,8 +71,37 @@ var decriptedString = key_private.decrypt(encriptedString, 'utf8')
 console.log(decriptedString);
 */
 
-var privateKey = fs.readFileSync('./privateKey.pem', 'utf8')
-var publicKey = fs.readFileSync('./publicKey.pem', 'utf8')
+function generateKeyPair(){
+    const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
+        modulusLength: 2048,
+        publicKeyEncoding: {
+            type: 'spki',
+            format: 'pem'
+        },
+        privateKeyEncoding: {
+            type: 'pkcs8',
+            format: 'pem'
+        }
+    });
+
+    return { publicKey, privateKey };
+}
+
+function saveKeyToFile(key, fileName){
+    fs.writeFileSync(fileName, key, 'utf8');
+    console.log(`Key Saved to ${fileName}`);
+}
+
+const { publicKey, privateKey }=  generateKeyPair();
+
+console.log('PrivateKey: \n'+ privateKey);
+console.log('PublicKey:\n'+ publicKey);
+
+saveKeyToFile(privateKey, 'privateKey.pem');
+saveKeyToFile(publicKey, 'publicKey.pem');
+
+var private_key = fs.readFileSync('./privateKey.pem', 'utf8')
+var public_key = fs.readFileSync('./publicKey.pem', 'utf8')
 
 var payload = { };
 payload.userName = 'HOS';
@@ -92,7 +123,7 @@ var signOption = {
     algorithm: 'RS256'
 };
 
-var token = jwt.sign(payload, privateKey, signOption);
+var token = jwt.sign(payload, private_key, signOption);
 
 console.log('Token:\n'+ token);
 
@@ -104,7 +135,7 @@ var verifyOptions = {
     algorithm: 'RS256'
 };
 
-var verify = jwt.verify(token, publicKey, verifyOptions);
+var verify = jwt.verify(token, public_key, verifyOptions);
 
 console.log('\nVerified: '+ JSON.stringify(verify));
 
@@ -112,3 +143,4 @@ var decode = jwt.decode(token, {complete: true});
 console.log('\n Decode Header: '+ JSON.stringify(decode.header));
 console.log('\n Decode Payload: '+ JSON.stringify(decode.payload));
 console.log('\nDetails for the user: ' + payload.userId + 'is sent back to client');
+
